@@ -1,92 +1,87 @@
 package com.example.progandro;
-import android.content.BroadcastReceiver;
-import android.content.Context;
+import android.app.job.JobInfo;
+import android.app.job.JobScheduler;
+import android.content.ComponentName;
 import android.content.Intent;
-import android.content.IntentFilter;
-import android.net.ConnectivityManager;
-import android.net.wifi.WifiManager;
+import android.os.Build;
 import android.os.Bundle;
-import android.widget.CompoundButton;
-import android.widget.FrameLayout;
-import android.widget.Switch;
+import android.util.Log;
+import android.view.Display;
+import android.view.Surface;
+import android.view.View;
+import android.view.WindowManager;
+import android.widget.Button;
 import android.widget.Toast;
 
+import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.fragment.app.FragmentTransaction;
 
 public class HomeActivity extends AppCompatActivity{
 
     private static final String TAG = HomeActivity.class.getSimpleName();
-    private FrameLayout fragmentHolder;
-    private Switch wifiSwitch;
-    private WifiManager wifiManager;
+    private Button btnStartJob;
+    private Button btnStopJob;
+    private Button btnListFilm;
 
     @Override
     protected void onCreate(Bundle savedInstanceState){
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_home);
 
+        btnStartJob = findViewById(R.id.startJob);
+        btnStopJob = findViewById(R.id.stopJob);
+        btnListFilm = findViewById(R.id.listFilm);
 
-//        FragmentTransaction fragmentTransaction = getSupportFragmentManager().beginTransaction();
-//        fragmentTransaction.replace(R.id.fragmentTop, new FragmentTop());
-//        fragmentTransaction.replace(R.id.fragmentBottom, new FragmentBottom());
-//        fragmentTransaction.commit();
-        wifiSwitch = findViewById(R.id.wifi_switch);
-        wifiManager = (WifiManager) getApplicationContext().getSystemService(Context.WIFI_SERVICE);
-        wifiSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+        //button lihat list film di halaman lain
+        btnListFilm.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                if(isChecked){
-                    wifiManager.setWifiEnabled(true);
-                    wifiSwitch.setText("Wifi is ON");
-                }
-                else{
-                    wifiManager.setWifiEnabled(false);
-                    wifiSwitch.setText("Wifi is OFF");
-                }
+            public void onClick(View v) {
+                onClickBtn();
             }
         });
+    }
 
-        if(wifiManager.isWifiEnabled()){
-            wifiSwitch.setChecked(true);
-            wifiSwitch.setText("Wifi is ON");
+    private void onClickBtn(){
+        Intent intent = new Intent(this, ListFilm.class);
+        startActivity(intent);
+    }
+
+    @Override
+    protected void onResume(){
+        super.onResume();
+        Display display = ((WindowManager) getSystemService(WINDOW_SERVICE)).getDefaultDisplay();
+        int rotation = display.getRotation();
+        if(rotation == Surface.ROTATION_90 || rotation == Surface.ROTATION_270){
+            Log.d("success", "onResume: Landscape");
         }
         else{
-            wifiSwitch.setChecked(false);
-            wifiSwitch.setText("Wifi is OFF");
+            Log.d("success", "onResume: Portrait");
         }
-        Toast.makeText(getApplicationContext(), "Ini home", Toast.LENGTH_LONG).show();
-        BroadcastReciver broadcastReciver = new BroadcastReciver();
-        IntentFilter filter = new IntentFilter(ConnectivityManager.EXTRA_NO_CONNECTIVITY);
-        this.registerReceiver(broadcastReciver, filter);
     }
 
-    protected void onStart(){
-        super.onStart();
-        IntentFilter intentFilter = new IntentFilter(WifiManager.WIFI_STATE_CHANGED_ACTION);
-        registerReceiver(wifiStateReceiver, intentFilter);
-    }
+    @RequiresApi(api = Build.VERSION_CODES.P)
+    public void scheduleJob(View view){
+        ComponentName componentName = new ComponentName(getApplicationContext(), MyJobService.class);
+        JobInfo info = new JobInfo.Builder(100, componentName)
+                .setRequiredNetworkType(JobInfo.NETWORK_TYPE_UNMETERED)
+                .setPersisted(true)
+                .setPeriodic(15 * 60 * 1000)
+                .build();
 
-    protected void onStop(){
-        super.onStop();
-        unregisterReceiver(wifiStateReceiver);
-    }
-
-    private BroadcastReceiver wifiStateReceiver = new BroadcastReceiver() {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            int wifiStateExtra = intent.getIntExtra(WifiManager.EXTRA_WIFI_STATE, WifiManager.WIFI_STATE_UNKNOWN);
-            switch(wifiStateExtra){
-                case WifiManager.WIFI_STATE_ENABLED:
-                    wifiSwitch.setChecked(true);
-                    wifiSwitch.setText("Wifi is ON");
-                    break;
-                case WifiManager.WIFI_STATE_DISABLED:
-                    wifiSwitch.setChecked(false);
-                    wifiSwitch.setText("Wifi is OFF");
-                    break;
-            }
+        JobScheduler scheduler = (JobScheduler) getSystemService(JOB_SCHEDULER_SERVICE);
+        int resultCode = scheduler.schedule(info);
+        if(resultCode == JobScheduler.RESULT_SUCCESS){
+            Log.i(TAG, "scheduleJob: Job Scheduled");
         }
-    };
+        else{
+            Log.i(TAG, "scheduleJob: Job scheduling failed");
+        }
+    }
 
+    public void stopJob(View view){
+        JobScheduler scheduler = (JobScheduler) getSystemService(JOB_SCHEDULER_SERVICE);
+        scheduler.cancel(100);
+        Toast.makeText(getApplicationContext(), "Toast berhenti", Toast.LENGTH_LONG).show();
+        Log.i(TAG, "Stop Job");
+    }
 }
