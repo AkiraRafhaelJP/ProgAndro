@@ -1,3 +1,16 @@
 <resources>
     <string name="app_name">ProgAndro</string>
+
+    <string-array name="judul_film">
+        <item>Ex-Machina</item>
+        <item>Game of Thrones</item>
+        <item>Harry Potter</item>
+        <item>I am robot</item>
+        <item>The Imitation Game</item>
+        <item>Insidious</item>
+        <item>The Lord of the Rings</item>
+        <item>Pirates of the Caribbean</item>
+        <item>Sherlock Holmes BBC</item>
+        <item>3 idiots</item>
+    </string-array>
 </resources>
