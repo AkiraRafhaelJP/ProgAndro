@@ -23,6 +23,7 @@ public class HomeActivity extends AppCompatActivity{
     private Button btnStopJob;
     private Button btnListFilm;
 
+
     @Override
     protected void onCreate(Bundle savedInstanceState){
         super.onCreate(savedInstanceState);
@@ -36,12 +37,12 @@ public class HomeActivity extends AppCompatActivity{
         btnListFilm.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                onClickBtn();
+                onClickBtnListFilm();
             }
         });
     }
 
-    private void onClickBtn(){
+    private void onClickBtnListFilm(){
         Intent intent = new Intent(this, ListFilm.class);
         startActivity(intent);
     }
@@ -83,5 +84,12 @@ public class HomeActivity extends AppCompatActivity{
         scheduler.cancel(100);
         Toast.makeText(getApplicationContext(), "Toast berhenti", Toast.LENGTH_LONG).show();
         Log.i(TAG, "Stop Job");
+    }
+
+    public void logout(View view){
+        SessionManagement sessionManagement = new SessionManagement(this);
+        sessionManagement.removeSession();
+        Intent intent = new Intent(this, MainActivity.class);
+        startActivity(intent);
     }
 }

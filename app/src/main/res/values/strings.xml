@@ -1,5 +1,12 @@
 <resources>
     <string name="app_name">ProgAndro</string>
+    <string name="username">Username</string>
+    <string name="password">Password</string>
+    <string name="login">Login</string>
+    <string name="sign_up">Sign up</string>
+    <string name="username_sign">Username baru</string>
+    <string name="password_sign">Password baru</string>
+    <string name="password_confirm">Konfirmasi password</string>
 
     <string-array name="judul_film">
         <item>Ex-Machina</item>
