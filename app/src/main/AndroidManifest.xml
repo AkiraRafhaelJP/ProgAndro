@@ -20,6 +20,7 @@
             </intent-filter>
         </activity>
         <activity android:name=".HomeActivity"/>
+        <activity android:name=".RegistrationActivity"/>
         <activity android:name=".ListFilm"/>
 
         <service android:name=".MyJobService"
