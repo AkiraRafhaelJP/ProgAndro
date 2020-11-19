@@ -1,0 +1,40 @@
+{
+  "project_info": {
+    "project_number": "866869447679",
+    "firebase_url": "https://progandro-ef5f4.firebaseio.com",
+    "project_id": "progandro-ef5f4",
+    "storage_bucket": "progandro-ef5f4.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:866869447679:android:545d872ed740ba4d21f5ca",
+        "android_client_info": {
+          "package_name": "com.example.progandro"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "866869447679-dhvongr3j2fo3bt86sa9s8tfn9bntc1o.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBmPm5nRgZaRE-DANp0k3V5Hey-oszgZec"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "866869447679-dhvongr3j2fo3bt86sa9s8tfn9bntc1o.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
