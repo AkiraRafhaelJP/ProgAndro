@@ -1,198 +1,86 @@
 package com.example.progandro;
 
+import android.Manifest;
+import android.content.Context;
+import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
 import android.os.Bundle;
-import android.util.Log;
-import android.view.LayoutInflater;
+import android.provider.MediaStore;
 import android.view.View;
-import android.view.ViewGroup;
 import android.widget.Button;
-import android.widget.EditText;
-import android.widget.TextView;
+import android.widget.ImageView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
-
-import com.firebase.ui.firestore.FirestoreRecyclerAdapter;
-import com.firebase.ui.firestore.FirestoreRecyclerOptions;
-import com.google.android.gms.tasks.OnCompleteListener;
-import com.google.android.gms.tasks.OnFailureListener;
-import com.google.android.gms.tasks.OnSuccessListener;
-import com.google.android.gms.tasks.Task;
-import com.google.firebase.firestore.DocumentReference;
-import com.google.firebase.firestore.DocumentSnapshot;
-import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.firestore.Query;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 
 public class MainActivity extends AppCompatActivity {
-
     private static final String TAG = MainActivity.class.getSimpleName();
-    private EditText noMhs;
-    private EditText namaMhs;
-    private EditText phoneMhs;
-    private Button buttonSimpan;
-    private Button buttonHapus;
-    private FirebaseFirestore firebaseFirestoreDb = FirebaseFirestore.getInstance();
-    private FirestoreRecyclerAdapter adapter;
-    private RecyclerView recyclerView;
+    public static final int CAMERA_REQUEST_CODE = 102;
+    public  static final int CAMERA_PERMISSION_CODE = 101;
+
+    private ImageView image;
+    private Button btnCamera;
 
     public void onCreate(Bundle savedInstanceState){
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        noMhs = findViewById(R.id.noMhs);
-        namaMhs = findViewById(R.id.namaMhs);
-        phoneMhs = findViewById(R.id.phoneMhs);
-        buttonSimpan = findViewById(R.id.simpanButton);
-        buttonHapus = findViewById(R.id.hapusButton);
+        image = findViewById(R.id.imageCapture);
+        btnCamera = findViewById(R.id.btn_capture);
 
-        firebaseFirestoreDb = FirebaseFirestore.getInstance();
-        recyclerView = findViewById(R.id.recyclerView);
-
-        buttonSimpan.setOnClickListener(new View.OnClickListener() {
+        btnCamera.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                //sanity check
-                if (!noMhs.getText().toString().isEmpty() && !namaMhs.getText().toString().isEmpty()) {
-                    tambahMahasiswa();
-                } else {
-                    Toast.makeText(getApplicationContext(), "No dan Nama Mhs tidak boleh kosong",
-                            Toast.LENGTH_SHORT).show();
-                }
+                askCameraPermission();
             }
         });
-
-        buttonHapus.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                deleteDataMahasiswa();
-            }
-        });
-
-        //query
-        Query query = firebaseFirestoreDb.collection("DaftarMhs");
-
-        //recycleroptions
-        FirestoreRecyclerOptions<Mahasiswa> options = new FirestoreRecyclerOptions.Builder<Mahasiswa>()
-                .setQuery(query, Mahasiswa.class)
-                .build();
-
-        adapter = new FirestoreRecyclerAdapter<Mahasiswa, MahasiswaViewHolder>(options) {
-            @NonNull
-            @Override
-            public MahasiswaViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-                View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.list_mahasiswa_single, parent, false);
-                return new MahasiswaViewHolder(view);
-            }
-
-            @Override
-            protected void onBindViewHolder(@NonNull MahasiswaViewHolder holder, int position, @NonNull Mahasiswa model) {
-                holder.listNim.setText(model.getNim());
-                holder.listName.setText(model.getNama());
-                holder.listNoHp.setText(model.getPhone());
-            }
-        };
-
-
-        recyclerView.setLayoutManager(new LinearLayoutManager(this));
-        recyclerView.setAdapter(adapter);
     }
 
-    @Override
-    protected void onStart(){
-        super.onStart();
-        adapter.startListening();
-    }
-
-    @Override
-    protected void onStop(){
-        super.onStop();
-        adapter.stopListening();
-    }
-
-    private class MahasiswaViewHolder extends RecyclerView.ViewHolder{
-
-        private TextView listNim;
-        private TextView listName;
-        private TextView listNoHp;
-        public MahasiswaViewHolder(@NonNull View itemView) {
-            super(itemView);
-
-            listNim = itemView.findViewById(R.id.noMhs);
-            listName = itemView.findViewById(R.id.namaMhs);
-            listNoHp = itemView.findViewById(R.id.nomorHp);
+    private void askCameraPermission() {
+        if(ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED){
+            ActivityCompat.requestPermissions(this, new String[] {Manifest.permission.CAMERA}, CAMERA_PERMISSION_CODE);
+        } else{
+            openCamera();
         }
     }
 
-    private void tambahMahasiswa() {
-
-        Mahasiswa mhs = new Mahasiswa(noMhs.getText().toString(),
-                namaMhs.getText().toString(),
-                phoneMhs.getText().toString());
-
-        firebaseFirestoreDb.collection("DaftarMhs").document().set(mhs)
-            .addOnSuccessListener(new OnSuccessListener<Void>() {
-                @Override
-                public void onSuccess(Void aVoid) {
-                    Toast.makeText(getApplicationContext(), "Mahasiswa berhasil didaftarkan",
-                            Toast.LENGTH_SHORT).show();
-                }
-            })
-            .addOnFailureListener(new OnFailureListener() {
-                @Override
-                public void onFailure(@NonNull Exception e) {
-                    Toast.makeText(getApplicationContext(), "ERROR" + e.toString(),
-                            Toast.LENGTH_SHORT).show();
-                    Log.d("TAG", e.toString());
-                }
-            });
-    }
-
-    private void getDataMahasiswa() {
-        DocumentReference docRef = firebaseFirestoreDb.collection("DaftarMhs").document("mhs1");
-        docRef.get().addOnCompleteListener(new OnCompleteListener<DocumentSnapshot>() {
-            @Override
-            public void onComplete(@NonNull Task<DocumentSnapshot> task) {
-                if (task.isSuccessful()) {
-                    DocumentSnapshot document = task.getResult();
-                    if (document.exists()) {
-                        Mahasiswa mhs = document.toObject(Mahasiswa.class);
-                        noMhs.setText(mhs.getNim());
-                        namaMhs.setText(mhs.getNama());
-                        phoneMhs.setText(mhs.getPhone());
-                    } else {
-                        Toast.makeText(getApplicationContext(), "Document tidak ditemukan",
-                                Toast.LENGTH_SHORT).show();
-                    }
-                } else {
-                    Toast.makeText(getApplicationContext(), "Document error : " + task.getException(),
-                            Toast.LENGTH_SHORT).show();
-                }
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        if(requestCode == CAMERA_PERMISSION_CODE){
+            if(grantResults.length < 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED){
+                openCamera();
+            }else{
+                Toast.makeText(this, "Camera permission required", Toast.LENGTH_SHORT).show();
             }
-        });
+        }
     }
 
-    private void deleteDataMahasiswa() {
-        firebaseFirestoreDb.collection("DaftarMhs").document("mhs1")
-                .delete()
-                .addOnSuccessListener(new OnSuccessListener<Void>() {
-                    @Override
-                    public void onSuccess(Void aVoid) {
-                        noMhs.setText("");
-                        namaMhs.setText("");
-                        phoneMhs.setText("");
-                        Toast.makeText(getApplicationContext(), "Mahasiswa berhasil dihapus",
-                                Toast.LENGTH_SHORT).show();
-                    }
-                })
-                .addOnFailureListener(new OnFailureListener() {
-                    @Override
-                    public void onFailure(@NonNull Exception e) {
-                        Toast.makeText(getApplicationContext(), "Error deleting document: " + e.getMessage(),
-                                Toast.LENGTH_SHORT).show();
-                    }
-                });
+    private void openCamera() {
+        Intent cameraIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+        startActivityForResult(cameraIntent, CAMERA_REQUEST_CODE);
     }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == CAMERA_REQUEST_CODE) {
+            Bitmap imageThumbnail = (Bitmap) data.getExtras().get("data");
+            image.setImageBitmap(imageThumbnail);
+        }
+    }
+
+    //    private boolean checkCameraHardware(Context context) {
+//        if (context.getPackageManager().hasSystemFeature(PackageManager.FEATURE_CAMERA)){
+//            // this device has a camera
+//            return true;
+//        } else {
+//            // no camera on this device
+//            return false;
+//        }
+//    }
 }
