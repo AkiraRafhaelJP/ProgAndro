@@ -4,83 +4,120 @@ import android.Manifest;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.graphics.Bitmap;
+import android.location.Location;
+import android.location.LocationManager;
 import android.os.Bundle;
-import android.provider.MediaStore;
-import android.view.View;
-import android.widget.Button;
-import android.widget.ImageView;
-import android.widget.Toast;
+import android.os.Looper;
+import android.provider.Settings;
 
 import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
-import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
+import androidx.fragment.app.FragmentActivity;
 
-public class MainActivity extends AppCompatActivity {
+import com.google.android.gms.location.FusedLocationProviderClient;
+import com.google.android.gms.location.LocationCallback;
+import com.google.android.gms.location.LocationRequest;
+import com.google.android.gms.location.LocationResult;
+import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.maps.CameraUpdateFactory;
+import com.google.android.gms.maps.GoogleMap;
+import com.google.android.gms.maps.OnMapReadyCallback;
+import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.Task;
+
+public class MainActivity extends FragmentActivity implements OnMapReadyCallback {
     private static final String TAG = MainActivity.class.getSimpleName();
-    public static final int CAMERA_REQUEST_CODE = 102;
-    public  static final int CAMERA_PERMISSION_CODE = 101;
+    GoogleMap map;
+    FusedLocationProviderClient client;
+    double v, v1;
 
-    private ImageView image;
-    private Button btnCamera;
-
-    public void onCreate(Bundle savedInstanceState){
+    public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
-        image = findViewById(R.id.imageCapture);
-        btnCamera = findViewById(R.id.btn_capture);
-
-        btnCamera.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                askCameraPermission();
-            }
-        });
+        SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
+                .findFragmentById(R.id.map);
+        mapFragment.getMapAsync(this);
+        client = LocationServices.getFusedLocationProviderClient(getApplicationContext());
+        if (ContextCompat.checkSelfPermission(getApplicationContext(),
+                Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
+                && ContextCompat.checkSelfPermission(getApplicationContext(),
+                Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+            getCurrentLocation();
+        } else {
+            requestPermissions(new String[]{Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION}, 10);
+        }
     }
 
-    private void askCameraPermission() {
-        if(ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED){
-            ActivityCompat.requestPermissions(this, new String[] {Manifest.permission.CAMERA}, CAMERA_PERMISSION_CODE);
+    @Override
+    public void onMapReady(GoogleMap googleMap) {
+        map = googleMap;
+
+
+        LatLng jogja = new LatLng(v, v1);
+        map.addMarker(new MarkerOptions().position(jogja).title("Yogyakarta"));
+        map.moveCamera(CameraUpdateFactory.newLatLng(jogja));
+    }
+
+    private void getCurrentLocation() {
+        LocationManager locationManager = (LocationManager) getApplicationContext()
+                .getSystemService(Context.LOCATION_SERVICE);
+        if (locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER) ||
+                locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) {
+            if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                // TODO: Consider calling
+                //    ActivityCompat#requestPermissions
+                // here to request the missing permissions, and then overriding
+                //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+                //                                          int[] grantResults)
+                // to handle the case where the user grants the permission. See the documentation
+                // for ActivityCompat#requestPermissions for more details.
+                return;
+            }
+            client.getLastLocation().addOnCompleteListener(new OnCompleteListener<Location>() {
+                @Override
+                public void onComplete(@NonNull Task<Location> task) {
+                    Location location = task.getResult();
+                    if (location != null) {
+                        v = location.getLongitude();
+                        v1 = location.getLatitude();
+                    } else {
+                        LocationRequest locationRequest = new LocationRequest()
+                                .setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY)
+                                .setInterval(10000)
+                                .setFastestInterval(1000)
+                                .setNumUpdates(1);
+
+                        LocationCallback locationCallback = new LocationCallback() {
+                            @Override
+                            public void onLocationResult(LocationResult locationResult) {
+                                Location location = locationResult.getLastLocation();
+                                v = location.getLongitude();
+                                v1 = location.getLatitude();
+                            }
+                        };
+
+
+                        if (ActivityCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                            // TODO: Consider calling
+                            //    ActivityCompat#requestPermissions
+                            // here to request the missing permissions, and then overriding
+                            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+                            //                                          int[] grantResults)
+                            // to handle the case where the user grants the permission. See the documentation
+                            // for ActivityCompat#requestPermissions for more details.
+                            return;
+                        }
+                        client.requestLocationUpdates(locationRequest, locationCallback, Looper.myLooper());
+                    }
+                }
+            });
         } else{
-            openCamera();
+            startActivity(new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS)
+                    .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
         }
     }
-
-    @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        if(requestCode == CAMERA_PERMISSION_CODE){
-            if(grantResults.length < 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED){
-                openCamera();
-            }else{
-                Toast.makeText(this, "Camera permission required", Toast.LENGTH_SHORT).show();
-            }
-        }
-    }
-
-    private void openCamera() {
-        Intent cameraIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-        startActivityForResult(cameraIntent, CAMERA_REQUEST_CODE);
-    }
-
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode == CAMERA_REQUEST_CODE) {
-            Bitmap imageThumbnail = (Bitmap) data.getExtras().get("data");
-            image.setImageBitmap(imageThumbnail);
-        }
-    }
-
-    //    private boolean checkCameraHardware(Context context) {
-//        if (context.getPackageManager().hasSystemFeature(PackageManager.FEATURE_CAMERA)){
-//            // this device has a camera
-//            return true;
-//        } else {
-//            // no camera on this device
-//            return false;
-//        }
-//    }
 }
